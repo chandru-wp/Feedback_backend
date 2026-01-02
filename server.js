@@ -15,6 +15,7 @@ console.log("✅ Prisma initialized successfully");
 async function initializeDefaultAdmin() {
   try {
     const adminCount = await prisma.Admin.count();
+    console.log(`📊 Admin count: ${adminCount}`);
     if (adminCount === 0) {
       await prisma.Admin.create({
         data: {
@@ -23,13 +24,40 @@ async function initializeDefaultAdmin() {
         },
       });
       console.log("✅ Default admin created (username: admin, password: admin123)");
+    } else {
+      console.log("✅ Admin already exists");
     }
   } catch (error) {
     console.error("❌ Error initializing admin:", error);
   }
 }
 
-initializeDefaultAdmin();
+// ========== INITIALIZE DEFAULT USER ==========
+async function initializeDefaultUser() {
+  try {
+    const userCount = await prisma.User.count();
+    console.log(`📊 User count: ${userCount}`);
+    if (userCount === 0) {
+      await prisma.User.create({
+        data: {
+          username: "user",
+          password: "user123",
+          email: "user@example.com"
+        },
+      });
+      console.log("✅ Default user created (username: user, password: user123)");
+    } else {
+      console.log("✅ Users already exist");
+    }
+  } catch (error) {
+    console.error("❌ Error initializing user:", error);
+  }
+}
+
+(async () => {
+  await initializeDefaultAdmin();
+  await initializeDefaultUser();
+})();
 
 // ========== ADMIN AUTHENTICATION ==========
 
@@ -300,13 +328,43 @@ app.post("/api/user/login", async (req, res) => {
 // GET ALL USERS
 app.get("/api/user", async (req, res) => {
   try {
-    const users = await prisma.User.findMany({
-      select: { id: true, username: true, email: true, createdAt: true },
-    });
-    res.json(users);
+    const users = await prisma.User.findMany({});
+    
+    // Map users to ensure createdAt is handled properly
+    const sanitizedUsers = users.map(user => ({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      createdAt: user.createdAt || null
+    }));
+    
+    res.json(sanitizedUsers);
   } catch (error) {
     console.error("❌ Error fetching users:", error);
     res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+// UPDATE USER
+app.put("/api/user/:id", async (req, res) => {
+  try {
+    const { username, password, email } = req.body;
+    const updateData = {};
+    
+    if (username) updateData.username = username;
+    if (password) updateData.password = password;
+    if (email !== undefined) updateData.email = email;
+
+    const updated = await prisma.User.update({
+      where: { id: req.params.id },
+      data: updateData,
+      select: { id: true, username: true, email: true },
+    });
+    
+    res.json(updated);
+  } catch (error) {
+    console.error("❌ Error updating user:", error);
+    res.status(500).json({ error: "Failed to update user" });
   }
 });
 
