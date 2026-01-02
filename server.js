@@ -297,6 +297,30 @@ app.post("/api/user/login", async (req, res) => {
   }
 });
 
+// GET ALL USERS
+app.get("/api/user", async (req, res) => {
+  try {
+    const users = await prisma.User.findMany({
+      select: { id: true, username: true, email: true, createdAt: true },
+    });
+    res.json(users);
+  } catch (error) {
+    console.error("❌ Error fetching users:", error);
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+// DELETE USER
+app.delete("/api/user/:id", async (req, res) => {
+  try {
+    await prisma.User.delete({ where: { id: req.params.id } });
+    res.json({ message: "User deleted successfully" });
+  } catch (error) {
+    console.error("❌ Error deleting user:", error);
+    res.status(500).json({ error: "Failed to delete user" });
+  }
+});
+
 app.get("/", (req, res) => res.send("🚀 FeedbackForm API running!"));
 
 const PORT = process.env.PORT || 5001;
