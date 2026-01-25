@@ -229,6 +229,20 @@ app.get("/api/forms", async (req, res) => {
   }
 });
 
+// GET SINGLE FORM
+app.get("/api/forms/:id", async (req, res) => {
+  try {
+    const form = await prisma.FeedbackForm.findUnique({
+      where: { id: req.params.id },
+    });
+    if (!form) return res.status(404).json({ message: "Form not found" });
+    res.json(form);
+  } catch (error) {
+    console.error("❌ Error fetching form:", error);
+    res.status(500).json({ error: "Failed to fetch form" });
+  }
+});
+
 // CREATE FORM
 app.post("/api/forms", async (req, res) => {
   try {
